@@ -92,15 +92,39 @@ def push_to_sheets(
         client = _get_client()
 
         # Open or create the spreadsheet
+        created_new = False
         try:
             spreadsheet = client.open(spreadsheet_name)
             logger.info(f"Opened existing spreadsheet: {spreadsheet_name}")
         except Exception:
             if create_if_missing:
-                spreadsheet = client.create(spreadsheet_name)
-                logger.info(f"Created new spreadsheet: {spreadsheet_name}")
+                try:
+                    spreadsheet = client.create(spreadsheet_name)
+                    created_new = True
+                    logger.info(f"Created new spreadsheet: {spreadsheet_name}")
+                except Exception as create_exc:
+                    if "quota" in str(create_exc).lower() or "403" in str(create_exc):
+                        raise RuntimeError(
+                            f"Service account can't create sheets (Drive quota issue). "
+                            f"Fix: go to sheets.google.com, create a blank sheet named '{spreadsheet_name}', "
+                            f"then share it (Editor) with your service account email. "
+                            f"The analyzer will then write into your existing sheet."
+                        ) from create_exc
+                    raise
             else:
                 raise
+
+        # If we just created the sheet, share it with the user's personal email
+        # so it shows up in their Google Drive (not just the service account's)
+        if created_new:
+            import os
+            share_with = os.getenv("SHARE_SHEET_WITH", "").strip()
+            if share_with:
+                try:
+                    spreadsheet.share(share_with, perm_type="user", role="writer")
+                    logger.info(f"Shared spreadsheet with {share_with}")
+                except Exception as share_exc:
+                    logger.warning(f"Could not auto-share sheet: {share_exc}")
 
         # Get or create the worksheet
         try:
@@ -127,14 +151,59 @@ def push_to_sheets(
             worksheet.append_rows(chunk, value_input_option="USER_ENTERED")
             logger.debug(f"Wrote rows {start_row}-{start_row + len(chunk) - 1}")
 
-        # Format the header row bold
+        # Format the header row + freeze it + auto-resize all columns
         try:
-            worksheet.format(
-                f"A1:{chr(64 + len(CSV_COLUMNS))}1",
-                {"textFormat": {"bold": True}, "backgroundColor": {"red": 0.11, "green": 0.33, "blue": 0.55}},
-            )
-        except Exception:
-            pass  # Formatting is best-effort
+            sheet_id = worksheet._properties["sheetId"]
+            last_col = len(CSV_COLUMNS)
+
+            requests = [
+                # Bold white text on dark blue header
+                {
+                    "repeatCell": {
+                        "range": {
+                            "sheetId": sheet_id,
+                            "startRowIndex": 0,
+                            "endRowIndex": 1,
+                        },
+                        "cell": {
+                            "userEnteredFormat": {
+                                "textFormat": {
+                                    "bold": True,
+                                    "foregroundColor": {"red": 1, "green": 1, "blue": 1},
+                                },
+                                "backgroundColor": {"red": 0.11, "green": 0.33, "blue": 0.55},
+                                "horizontalAlignment": "CENTER",
+                            }
+                        },
+                        "fields": "userEnteredFormat(textFormat,backgroundColor,horizontalAlignment)",
+                    }
+                },
+                # Freeze the header row
+                {
+                    "updateSheetProperties": {
+                        "properties": {
+                            "sheetId": sheet_id,
+                            "gridProperties": {"frozenRowCount": 1},
+                        },
+                        "fields": "gridProperties.frozenRowCount",
+                    }
+                },
+                # Auto-resize all columns to fit content
+                {
+                    "autoResizeDimensions": {
+                        "dimensions": {
+                            "sheetId": sheet_id,
+                            "dimension": "COLUMNS",
+                            "startIndex": 0,
+                            "endIndex": last_col,
+                        }
+                    }
+                },
+            ]
+
+            spreadsheet.batch_update({"requests": requests})
+        except Exception as fmt_exc:
+            logger.warning(f"Sheet formatting failed (non-critical): {fmt_exc}")
 
         url = spreadsheet.url
         logger.info(f"Results pushed to Google Sheets: {url}")
