@@ -1,0 +1,107 @@
+flowchart TD
+    %% ─── INPUT LAYER ───────────────────────────────────────────
+    subgraph INPUT["🗂️  Input Layer"]
+        A1["📄 CSV Upload\n(pandas read_csv)"]
+        A2["🔍 URL Discovery Engine\n(SerpAPI / Google CSE /\nCommon Crawl)"]
+        A3["🌐 Seed URL\n+ Outlink Crawler"]
+    end
+
+    %% ─── QUEUE / ORCHESTRATION ──────────────────────────────────
+    subgraph ORCH["⚙️  Orchestration Layer"]
+        B1["📦 URL Queue\n(asyncio.Queue)"]
+        B2["🔀 Batch Chunker\n(500–1 K batches)"]
+        B3["🚦 Rate Limiter\n(per-domain)"]
+        B4["🔁 Retry Manager\n(exponential back-off)"]
+        B5["📊 Progress Tracker\n(tqdm)"]
+    end
+
+    %% ─── FETCHING LAYER ─────────────────────────────────────────
+    subgraph FETCH["🌐  Fetching Layer"]
+        C1["⚡ Async HTTP Fetcher\n(httpx / aiohttp)"]
+        C2["🎭 JS Renderer\n(Playwright — fallback)"]
+        C3["🤖 Apify Cloud\n(optional, for scale)"]
+    end
+
+    %% ─── EXTRACTION LAYER ───────────────────────────────────────
+    subgraph EXTRACT["🔎  Extraction Layer"]
+        D1["📰 HTML Parser\n(BeautifulSoup4)"]
+        D2["🌍 Language Detector\n(langdetect)"]
+        D3["✉️  Email Extractor\n(regex + html scrape\n+ contact page)"]
+        D4["🏷️  Meta-tag Parser\n(og:author, article:author\nschema.org byline)"]
+        D5["🔑 CMS / Site-type\nHeuristics"]
+    end
+
+    %% ─── AI CLASSIFICATION ──────────────────────────────────────
+    subgraph AI["🤖  AI Classification (Claude API)"]
+        E1["📝 Prompt Builder\n(site text + meta → JSON prompt)"]
+        E2["🧠 Claude claude-haiku-4-5\n(niche · type · author · language\n+ confidence scores)"]
+        E3["📋 Response Parser\n(structured JSON output)"]
+    end
+
+    %% ─── VALIDATION LAYER ───────────────────────────────────────
+    subgraph VALID["✅  Validation Layer"]
+        F1["📧 Email Format\n(regex RFC-5322)"]
+        F2["🌐 DNS MX Lookup\n(dnspython)"]
+        F3["⚠️  SMTP Probe\n(optional — careful w/ spam filters)"]
+    end
+
+    %% ─── OUTPUT LAYER ───────────────────────────────────────────
+    subgraph OUTPUT["📤  Output Layer"]
+        G1["📊 Google Sheets\n(gspread)"]
+        G2["💾 CSV Export\n(pandas to_csv)"]
+        G3["📁 JSON Archive\n(raw results)"]
+    end
+
+    %% ─── DATA SCHEMA ─────────────────────────────────────────────
+    subgraph SCHEMA["📋  Output Schema (per site)"]
+        direction LR
+        H1["URL | Niche/Topic | Site Type\nLanguage | Author/Editor\nEmail | Email Valid | Confidence | Status"]
+    end
+
+    %% ─── FLOW ────────────────────────────────────────────────────
+    A1 --> B1
+    A2 --> B1
+    A3 --> B1
+
+    B1 --> B2 --> B3 --> C1
+    B4 -.->|retry on fail| C1
+    B5 -.->|monitors| B1
+
+    C1 -->|static HTML| D1
+    C1 -->|JS-heavy site| C2 --> D1
+    C1 -->|rate-limited / blocked| C3 --> D1
+
+    D1 --> D2
+    D1 --> D3
+    D1 --> D4
+    D1 --> D5
+
+    D2 & D3 & D4 & D5 --> E1
+    E1 --> E2 --> E3
+
+    D3 --> F1 --> F2 --> F3
+
+    E3 & F2 --> G1
+    E3 & F2 --> G2
+    E3 & F2 --> G3
+
+    G1 & G2 & G3 --> SCHEMA
+
+    %% ─── STYLES ─────────────────────────────────────────────────
+    classDef inputStyle fill:#D6EAF8,stroke:#2E86C1,color:#000
+    classDef orchStyle  fill:#D5F5E3,stroke:#1E8449,color:#000
+    classDef fetchStyle fill:#FEF9E7,stroke:#D4AC0D,color:#000
+    classDef extractStyle fill:#FDEBD0,stroke:#CA6F1E,color:#000
+    classDef aiStyle    fill:#E8DAEF,stroke:#7D3C98,color:#000
+    classDef validStyle fill:#FADBD8,stroke:#C0392B,color:#000
+    classDef outStyle   fill:#D5D8DC,stroke:#566573,color:#000
+    classDef schemaStyle fill:#F9F9F9,stroke:#AAA,color:#000
+
+    class A1,A2,A3 inputStyle
+    class B1,B2,B3,B4,B5 orchStyle
+    class C1,C2,C3 fetchStyle
+    class D1,D2,D3,D4,D5 extractStyle
+    class E1,E2,E3 aiStyle
+    class F1,F2,F3 validStyle
+    class G1,G2,G3 outStyle
+    class H1 schemaStyle

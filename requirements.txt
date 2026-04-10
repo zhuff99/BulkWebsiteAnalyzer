@@ -1,0 +1,25 @@
+# ── Phase 1: Core (required) ──────────────────────────────────────────────────
+httpx[http2]          # Async HTTP client
+beautifulsoup4        # HTML parser
+lxml                  # Fast HTML parser backend for BeautifulSoup
+langdetect            # Language identification from text
+anthropic             # Official Anthropic / Claude API SDK
+pydantic>=2.0         # Data models and validation
+pandas                # CSV loading and data manipulation
+tqdm                  # Progress bars
+python-dotenv         # Load .env files
+
+# ── Phase 2: Power features (install as needed) ───────────────────────────────
+
+# Playwright — JS rendering fallback for blocked/SPA sites
+# pip install playwright && playwright install chromium
+# playwright
+
+# dnspython — Email DNS MX validation
+# pip install dnspython
+# dnspython
+
+# Google Sheets export
+# pip install gspread google-auth
+# gspread
+# google-auth
