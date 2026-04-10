@@ -1,5 +1,5 @@
 # ── Phase 1: Core (required) ──────────────────────────────────────────────────
-httpx[http2]          # Async HTTP client
+httpx[http2]          # Async HTTP client with HTTP/2 support
 beautifulsoup4        # HTML parser
 lxml                  # Fast HTML parser backend for BeautifulSoup
 langdetect            # Language identification from text
@@ -9,17 +9,13 @@ pandas                # CSV loading and data manipulation
 tqdm                  # Progress bars
 python-dotenv         # Load .env files
 
-# ── Phase 2: Power features (install as needed) ───────────────────────────────
+# ── Phase 2: Power features ────────────────────────────────────────────────────
+# Install all at once:
+#   pip install playwright dnspython gspread google-auth ddgs
+#   python -m playwright install chromium
 
-# Playwright — JS rendering fallback for blocked/SPA sites
-# pip install playwright && playwright install chromium
-# playwright
-
-# dnspython — Email DNS MX validation
-# pip install dnspython
-# dnspython
-
-# Google Sheets export
-# pip install gspread google-auth
-# gspread
-# google-auth
+playwright            # Headless Chromium fallback for JS-heavy / bot-protected sites
+dnspython             # Email DNS MX validation
+gspread               # Google Sheets API client
+google-auth           # Google service account authentication
+ddgs                  # DuckDuckGo search for URL auto-discovery (free, no API key)

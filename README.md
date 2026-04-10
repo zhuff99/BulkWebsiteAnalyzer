@@ -1,6 +1,6 @@
 # 🔍 Bulk Website Analyzer
 
-> Classify 500–1,000+ websites at scale using AI. Feed it a CSV of URLs (or let it discover them automatically), and get back niche, site type, language, author, and contact email — all in one CSV or Google Sheet.
+> Classify 500–1,000+ websites at scale using AI. Feed it a CSV of URLs (or let it discover them automatically), and get back niche, site type, language, author, and contact email — exported to CSV or Google Sheets.
 
 ![Python](https://img.shields.io/badge/Python-3.10%2B-blue?logo=python)
 ![Claude AI](https://img.shields.io/badge/AI-Claude%20Haiku-purple?logo=anthropic)
@@ -16,19 +16,19 @@
 | Niche / Topic | `Personal Finance` |
 | Site Type | `Blog` / `News` / `Business` / `E-commerce` |
 | Language | `English (en)` |
-| Author / Editor | `J.D. Roth` |
-| Contact Email | `support@getrichslowly.org` |
+| Author / Editor | `Pat Flynn` |
+| Contact Email | `neil@advanced.npdigital.com` |
 | Email Valid | `True` (DNS MX verified) |
 | Confidence Scores | `95% niche · 92% type · 88% author` |
 | CMS Detected | `WordPress` / `Shopify` / `Ghost` |
 
-**Sample output** from a real run on `--discover "personal finance blog"`:
+---
 
-```
-https://www.getrichslowly.org  →  Personal Finance | Blog | J.D. Roth | support@getrichslowly.org
-https://www.ramseysolutions.com  →  Personal Finance | Business | Dave Ramsey | help@ramseysolutions.com
-https://finmasters.com  →  Personal Finance Education | Blog | Steve Rogers | hi@finmasters.com
-```
+## Demo
+
+Real run across 20 diverse sites — authors detected, emails validated, all columns populated and auto-resized in Google Sheets:
+
+![Google Sheets demo](Screenshots/google_sheets.jpg)
 
 ---
 
@@ -38,45 +38,47 @@ https://finmasters.com  →  Personal Finance Education | Blog | Steve Rogers | 
 
 ```bash
 # 1. Clone the repo
-git clone https://github.com/yourusername/BulkWebsiteAnalyzer.git
+git clone https://github.com/zhuff99/BulkWebsiteAnalyzer.git
 cd BulkWebsiteAnalyzer
 
-# 2. Install dependencies
+# 2. Install core dependencies
 pip install -r requirements.txt
-pip install langdetect ddgs        # required extras
 
-# 3. Configure
+# 3. Install Phase 2 extras
+pip install playwright dnspython gspread google-auth
+python -m playwright install chromium
+
+# 4. Configure
 cp .env.example .env
-# Edit .env and add your ANTHROPIC_API_KEY
+# Edit .env — add your ANTHROPIC_API_KEY at minimum
 
-# 4. Run on the sample CSV
+# 5. Run on the sample CSV
 python analyzer.py --input sample_data/sites.csv
 ```
 
-Results land in a timestamped CSV in the `results/` folder. That's it.
+Results land in a timestamped CSV under `results/`. That's it.
 
 ---
 
 ## Installation
 
-### Core dependencies
+### Core (required)
 ```bash
 pip install -r requirements.txt
-pip install langdetect ddgs
 ```
 
-### Optional: Playwright (for JS-heavy / bot-protected sites)
+### Playwright — JS rendering & anti-bot bypass
 ```bash
 pip install playwright
 python -m playwright install chromium
 ```
 
-### Optional: Email DNS validation
+### Email DNS validation
 ```bash
 pip install dnspython
 ```
 
-### Optional: Google Sheets export
+### Google Sheets export
 ```bash
 pip install gspread google-auth
 ```
@@ -90,30 +92,28 @@ pip install gspread google-auth
 python analyzer.py --input sites.csv
 ```
 
-### Auto-discover URLs by niche (no CSV needed)
+### Auto-discover URLs by keyword (no CSV needed)
 ```bash
 python analyzer.py --discover "personal finance blog" --discover-count 50
 ```
 
-### Combine discovery + your own CSV
+### Discover + validate emails + export to Google Sheets
 ```bash
-python analyzer.py --input existing.csv --discover "SEO tools" --discover-count 30
+python analyzer.py \
+  --input sites.csv \
+  --validate-emails \
+  --sheets --sheets-name "My Research"
 ```
 
 ### Full-featured run
 ```bash
 python analyzer.py \
   --input sites.csv \
-  --discover "personal finance blog" --discover-count 50 \
+  --discover "SEO tools" --discover-count 30 \
   --validate-emails \
+  --sheets --sheets-name "SEO Tools Analysis" \
   --model claude-sonnet-4-6 \
-  --workers 30 \
-  --output results/my_run.csv
-```
-
-### Push results to Google Sheets
-```bash
-python analyzer.py --input sites.csv --sheets --sheets-name "My Research"
+  --workers 30
 ```
 
 ---
@@ -122,27 +122,27 @@ python analyzer.py --input sites.csv --sheets --sheets-name "My Research"
 
 ```
 Input / Output:
-  --input  CSV_FILE      Input CSV with a 'url' column
-  --output CSV_FILE      Output path (default: results/results_TIMESTAMP.csv)
+  --input  CSV_FILE        Input CSV with a 'url' column
+  --output CSV_FILE        Output path (default: results/results_TIMESTAMP.csv)
 
 AI Settings:
-  --model  MODEL_ID      Claude model (default: claude-haiku-4-5-20251001)
-  --batch-size N         Sites per API call (default: 10)
+  --model  MODEL_ID        Claude model (default: claude-haiku-4-5-20251001)
+  --batch-size N           Sites per API call (default: 10)
 
 Performance:
-  --workers N            Concurrent fetch workers (default: 20)
+  --workers N              Concurrent fetch workers (default: 20)
 
 Phase 2 Features:
-  --validate-emails      DNS MX validation on all extracted emails
-  --sheets               Push results to Google Sheets
-  --sheets-name NAME     Spreadsheet name (default: 'Bulk Website Analysis')
-  --discover QUERY       Keyword query for URL auto-discovery
-  --discover-provider    duckduckgo | serpapi | google_cse | commoncrawl
-  --discover-count N     URLs to discover (default: 50)
+  --validate-emails        DNS MX validation on all extracted emails
+  --sheets                 Push results to Google Sheets
+  --sheets-name NAME       Spreadsheet name (default: 'Bulk Website Analysis')
+  --discover QUERY         Keyword query for URL auto-discovery
+  --discover-provider      duckduckgo | serpapi | google_cse | commoncrawl
+  --discover-count N       URLs to discover (default: 50)
 
 Utility:
-  --dry-run              Validate input without fetching
-  --verbose              Debug-level logging
+  --dry-run                Validate input without fetching
+  --verbose                Debug-level logging
 ```
 
 ---
@@ -155,7 +155,7 @@ Copy `.env.example` to `.env` and fill in your values:
 # Required
 ANTHROPIC_API_KEY=your_key_here
 
-# Model (haiku = cheap & fast, sonnet = accurate)
+# Model selection (haiku = cheap & fast, sonnet = most accurate)
 CLAUDE_MODEL=claude-haiku-4-5-20251001
 
 # Performance tuning
@@ -165,14 +165,26 @@ PER_DOMAIN_DELAY=2.0
 CLAUDE_BATCH_SIZE=10
 BODY_TEXT_LIMIT=3000
 
-# Phase 2: URL discovery (optional)
+# Phase 2: Google Sheets export (optional)
+GOOGLE_SERVICE_ACCOUNT_FILE=path/to/service_account.json
+SHARE_SHEET_WITH=you@gmail.com   # auto-shares new sheets to your Drive
+
+# Phase 2: URL discovery (optional — DuckDuckGo is free, no key needed)
 SERPAPI_KEY=
 GOOGLE_CSE_KEY=
 GOOGLE_CSE_ID=
-
-# Phase 2: Google Sheets (optional)
-GOOGLE_SERVICE_ACCOUNT_FILE=path/to/key.json
 ```
+
+### Google Sheets Setup (one-time)
+
+1. Go to [console.cloud.google.com](https://console.cloud.google.com) and create a project
+2. Enable **Google Sheets API** and **Google Drive API**
+3. Go to **IAM & Admin → Service Accounts → Create Service Account**
+4. Under **Keys → Add Key → JSON**, download the key file
+5. Set `GOOGLE_SERVICE_ACCOUNT_FILE` in `.env` to point to that file
+6. Set `SHARE_SHEET_WITH` to your personal Gmail
+7. Create a blank Google Sheet, share it (Editor) with the service account email
+8. Run with `--sheets --sheets-name "Your Sheet Name"`
 
 ---
 
@@ -180,7 +192,7 @@ GOOGLE_SERVICE_ACCOUNT_FILE=path/to/key.json
 
 Using Claude Haiku (default):
 
-| Sites | API Calls | Cost |
+| Sites | API Calls | Approx. Cost |
 |---|---|---|
 | 100 | 10 | ~$0.03 |
 | 500 | 50 | ~$0.15 |
@@ -193,25 +205,27 @@ Switch to `--model claude-sonnet-4-6` for higher accuracy (~10× cost).
 ## How It Works
 
 ```
-URLs (CSV or discovery)
+URLs (CSV or --discover keyword search)
         ↓
-  Async HTTP Fetcher  ←──── Playwright fallback (auto on 403 or JS-heavy)
+  Async HTTP Fetcher (httpx, 20 concurrent workers)
+        ↓  ← auto-falls back on 403 / JS-heavy pages
+  Playwright Headless Chromium
         ↓
   HTML Extraction
-  ├── Title, meta, body text
-  ├── Email addresses (regex + contact page)
-  ├── Author name (JSON-LD, meta tags, bylines)
-  └── CMS fingerprint
+  ├── Title, meta description, body text
+  ├── Email addresses (regex + contact page crawl)
+  ├── Author name (JSON-LD, Open Graph, bylines)
+  └── CMS fingerprint (WordPress, Shopify, Ghost…)
         ↓
-  Claude AI (batched, 10 sites/call)
-  ├── Niche classification
-  ├── Site type
-  ├── Language
-  └── Confidence scores
+  Claude AI — batched 10 sites per API call
+  ├── Niche / topic classification
+  ├── Site type (Blog / News / Business / E-commerce…)
+  ├── Language detection
+  └── Confidence scores (0–100)
         ↓
-  Email DNS Validation (optional)
+  Email DNS Validation (dnspython MX lookup)
         ↓
-  CSV / Google Sheets output
+  CSV output  +  Google Sheets export (auto-resize, frozen header)
 ```
 
 Full architecture diagram: [`website_analyzer_architecture.mermaid`](website_analyzer_architecture.mermaid)
@@ -222,43 +236,57 @@ Full architecture diagram: [`website_analyzer_architecture.mermaid`](website_ana
 
 ```
 BulkWebsiteAnalyzer/
-├── analyzer.py           # CLI entry point
-├── orchestrator.py       # Async engine
-├── models.py             # Pydantic data schemas
-├── config.py             # Settings & env vars
+├── analyzer.py                       # CLI entry point
+├── orchestrator.py                   # Async pipeline engine
+├── models.py                         # Pydantic data schemas
+├── config.py                         # Settings & .env loader
+│
 ├── input/
-│   ├── csv_loader.py     # CSV parsing & URL validation
-│   └── discovery.py      # DuckDuckGo / SerpAPI / Common Crawl
+│   ├── csv_loader.py                 # CSV parsing & URL validation
+│   └── discovery.py                  # DuckDuckGo / SerpAPI / Common Crawl
+│
 ├── fetcher/
-│   ├── http_fetcher.py   # Async httpx fetcher with retry
-│   └── playwright_fetcher.py  # Headless Chromium fallback
+│   ├── http_fetcher.py               # Async httpx with retry & rate limiting
+│   └── playwright_fetcher.py         # Headless Chromium fallback
+│
 ├── extractor/
-│   ├── html_parser.py    # Title, text, CMS detection
-│   ├── email_extractor.py
-│   └── author_parser.py
+│   ├── html_parser.py                # Title, body text, CMS detection
+│   ├── email_extractor.py            # Email scraping
+│   └── author_parser.py             # Author name extraction
+│
 ├── ai/
-│   ├── prompt_builder.py
-│   └── claude_client.py
+│   ├── prompt_builder.py             # Claude prompt construction
+│   └── claude_client.py             # Batched API calls with retry
+│
 ├── validation/
-│   └── email_validator.py  # Regex + DNS MX + optional SMTP
+│   └── email_validator.py            # Regex + DNS MX + optional SMTP
+│
 ├── output/
-│   ├── csv_writer.py
-│   └── sheets_writer.py
+│   ├── csv_writer.py                 # Timestamped CSV export
+│   └── sheets_writer.py             # Google Sheets push with formatting
+│
 ├── sample_data/
-│   └── sites.csv         # 10 test URLs to get started
+│   ├── sites.csv                     # 10 URLs — basic test
+│   └── sites_with_contacts.csv       # 20 URLs — authors & emails demo
+│
+├── Screenshots/
+│   └── google_sheets.jpg             # Demo output screenshot
+│
 ├── requirements.txt
-└── .env.example
+├── .env.example
+└── website_analyzer_architecture.mermaid
 ```
 
 ---
 
 ## Input CSV Format
 
-Minimum required — just a `url` column:
+Minimum — just a `url` column:
+
 ```csv
 url
 https://www.example.com
-https://www.another.com
+https://www.another-site.com
 ```
 
 The loader also accepts columns named `URL`, `website`, `domain`, or `link`. Extra columns are passed through to the output unchanged.
@@ -267,10 +295,10 @@ The loader also accepts columns named `URL`, `website`, `domain`, or `link`. Ext
 
 ## Roadmap
 
-- [x] **Phase 1** — CSV input, async fetching, Claude AI classification, CSV output
-- [x] **Phase 2** — Playwright fallback, email validation, Google Sheets, URL discovery
-- [ ] **Phase 3** — Docker container, Apify proxy integration, web UI (Streamlit)
-- [ ] **Phase 4** — Scheduled runs, database persistence, webhook notifications
+- [x] **Phase 1** — CSV input, async HTTP fetching, Claude AI classification, CSV output
+- [x] **Phase 2** — Playwright anti-bot fallback, email DNS validation, Google Sheets export with formatting, DuckDuckGo URL discovery
+- [ ] **Phase 3** — Docker container for one-command deployment, Apify residential proxy integration for Cloudflare-protected sites
+- [ ] **Phase 4** — Scheduled runs, database persistence, webhook / Zapier notifications
 
 ---
 
