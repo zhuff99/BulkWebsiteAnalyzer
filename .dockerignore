@@ -1,0 +1,33 @@
+# Git
+.git
+.gitignore
+
+# Environment & secrets
+.env
+*.json.key
+service_account*.json
+
+# Results (mounted as volume instead)
+results/
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Docs & screenshots (not needed at runtime)
+Screenshots/
+*.docx
+*.mermaid
+README.md

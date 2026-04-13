@@ -77,14 +77,26 @@ async def _playwright_fetch(url: str, user_agent: str, timeout_ms: int) -> SiteD
 
     try:
         async with async_playwright() as pw:
-            browser = await pw.chromium.launch(
-                headless=True,
-                args=[
+            # Phase 3: Apify residential proxy support
+            proxy_config = None
+            if config.USE_PROXY:
+                from fetcher.proxy import get_playwright_proxy
+                proxy_config = get_playwright_proxy()
+                if proxy_config:
+                    logger.debug(f"Using Apify proxy for Playwright: {url}")
+
+            launch_args = {
+                "headless": True,
+                "args": [
                     "--no-sandbox",
                     "--disable-blink-features=AutomationControlled",
                     "--disable-dev-shm-usage",
                 ],
-            )
+            }
+            if proxy_config:
+                launch_args["proxy"] = proxy_config
+
+            browser = await pw.chromium.launch(**launch_args)
 
             context = await browser.new_context(
                 user_agent=user_agent,

@@ -102,11 +102,20 @@ async def fetch_url(url: str) -> SiteData:
 
     last_error: str = ""
 
+    # ── Proxy support (Phase 3: Apify residential proxies) ──────────
+    proxy_url = None
+    if config.USE_PROXY:
+        from fetcher.proxy import get_proxy_url
+        proxy_url = get_proxy_url()
+        if proxy_url:
+            logger.debug(f"Using Apify proxy for: {url}")
+
     async with httpx.AsyncClient(
         timeout=httpx.Timeout(config.REQUEST_TIMEOUT),
         headers=headers,
         verify=False,          # Some sites have self-signed certs; don't fail on them
         max_redirects=10,
+        proxy=proxy_url,
     ) as client:
 
         for attempt in range(1, config.MAX_RETRIES + 1):

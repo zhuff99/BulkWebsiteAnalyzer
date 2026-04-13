@@ -51,6 +51,18 @@ USER_AGENTS: list[str] = [
 ]
 
 
+# ── Proxy Settings (Phase 3: Apify residential proxies) ──────────────────────
+
+# Set to True to route all requests through Apify proxy
+USE_PROXY:         bool = os.getenv("USE_PROXY", "false").lower() in ("true", "1", "yes")
+
+# Your Apify API token (Settings → Integrations → API token)
+APIFY_API_TOKEN:   str  = os.getenv("APIFY_API_TOKEN", "")
+
+# Proxy group: RESIDENTIAL (best for Cloudflare) or SHADER (cheaper datacenter)
+APIFY_PROXY_GROUP: str  = os.getenv("APIFY_PROXY_GROUP", "RESIDENTIAL")
+
+
 # ── Output Settings ───────────────────────────────────────────────────────────
 
 OUTPUT_DIR: str = os.getenv("OUTPUT_DIR", "results")
@@ -68,4 +80,6 @@ def validate_config() -> list[str]:
         warnings.append("ANTHROPIC_API_KEY is not set — AI classification will be skipped.")
     if CLAUDE_BATCH_SIZE < 1 or CLAUDE_BATCH_SIZE > 20:
         warnings.append(f"CLAUDE_BATCH_SIZE={CLAUDE_BATCH_SIZE} is outside the 1-20 range. Defaulting to 10.")
+    if USE_PROXY and not APIFY_API_TOKEN:
+        warnings.append("USE_PROXY is enabled but APIFY_API_TOKEN is not set — proxy will be disabled.")
     return warnings

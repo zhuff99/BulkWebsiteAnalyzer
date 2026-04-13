@@ -1,0 +1,22 @@
+# ─────────────────────────────────────────────────────────────────
+#  Bulk Website Analyzer — Docker Compose
+#
+#  Usage:
+#    docker compose run analyzer --input sample_data/sites.csv
+#    docker compose run analyzer --discover "personal finance blog" --discover-count 50
+#    docker compose run analyzer --input sample_data/sites.csv --validate-emails --sheets
+# ─────────────────────────────────────────────────────────────────
+
+services:
+  analyzer:
+    build: .
+    env_file:
+      - .env
+    volumes:
+      # Mount local results directory so output persists after container exits
+      - ./results:/app/results
+      # Mount input data (read-only)
+      - ./sample_data:/app/sample_data:ro
+      # Mount Google service account key if using Sheets export
+      # Uncomment and adjust the path below:
+      # - ./service_account.json:/app/service_account.json:ro

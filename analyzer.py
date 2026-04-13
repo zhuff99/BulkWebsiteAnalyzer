@@ -153,6 +153,21 @@ Examples:
         help="Number of URLs to discover. Default: 50",
     )
 
+    # Phase 3 features
+    p3_group = parser.add_argument_group("Phase 3 Features")
+    p3_group.add_argument(
+        "--proxy",
+        action="store_true",
+        help="Route requests through Apify residential proxy (requires APIFY_API_TOKEN in .env).",
+    )
+    p3_group.add_argument(
+        "--proxy-group",
+        default=None,
+        choices=["RESIDENTIAL", "SHADER"],
+        help="Apify proxy group. RESIDENTIAL = rotating residential IPs (best for Cloudflare). "
+             "SHADER = datacenter proxies (cheaper). Default: RESIDENTIAL",
+    )
+
     # Misc
     parser.add_argument(
         "--verbose", "-v",
@@ -185,6 +200,12 @@ def main() -> int:
     # Override config with CLI flags
     config.CLAUDE_MODEL      = args.model
     config.CLAUDE_BATCH_SIZE = args.batch_size
+
+    # Phase 3: Proxy overrides
+    if args.proxy:
+        config.USE_PROXY = True
+    if args.proxy_group:
+        config.APIFY_PROXY_GROUP = args.proxy_group
 
     # ── Load URLs (CSV and/or discovery) ──────────────────────────────────
     urls: list[str] = []
@@ -219,11 +240,16 @@ def main() -> int:
         logger.error("No URLs to process. Provide --input and/or --discover.")
         return 1
 
+    proxy_status = "OFF"
+    if config.USE_PROXY:
+        proxy_status = f"ON (Apify {config.APIFY_PROXY_GROUP})" if config.APIFY_API_TOKEN else "ON (no token — disabled)"
+
     print(f"\n  Input file : {args.input}")
     print(f"  URLs found : {len(urls)}")
     print(f"  Model      : {args.model}")
     print(f"  Workers    : {args.workers}")
     print(f"  Batch size : {args.batch_size}")
+    print(f"  Proxy      : {proxy_status}")
     print(f"  Output     : {args.output or 'auto-generated'}\n")
 
     if args.dry_run:
