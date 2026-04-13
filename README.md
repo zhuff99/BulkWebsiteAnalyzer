@@ -359,15 +359,27 @@ BulkWebsiteAnalyzer/
 
 ## Input CSV Format
 
-Minimum — just a `url` column:
+There's no limit on how many sites you can scan — just add more rows to your CSV. The `sample_data/sites.csv` file only has 10 URLs as a quick test, but the tool is designed to handle 500–1,000+ sites in a single run.
+
+Minimum format — just a `url` column:
 
 ```csv
 url
 https://www.example.com
 https://www.another-site.com
+https://www.third-site.com
 ```
 
-The loader also accepts columns named `URL`, `website`, `domain`, or `link`. Extra columns are passed through to the output unchanged.
+To scan your own list, create a CSV with a `url` column and pass it in:
+
+```bash
+python analyzer.py --input my_sites.csv
+
+# Docker version
+docker compose run analyzer --input my_sites.csv
+```
+
+The loader also accepts columns named `URL`, `website`, `domain`, or `link`. Any extra columns in your CSV (like a `notes` or `category` column) are passed through unchanged to the output.
 
 ---
 

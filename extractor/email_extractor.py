@@ -47,11 +47,14 @@ _OBFUSCATION_SUBS = [
 
 # False-positive filters — skip any email matching these patterns
 _BLOCKLIST_PATTERNS = [
-    re.compile(r"\.(png|jpg|jpeg|gif|svg|webp|css|js|json|xml|php|asp)$", re.I),
+    re.compile(r"\.(png|jpg|jpeg|gif|svg|webp|webm|css|js|json|xml|php|asp)$", re.I),
     re.compile(r"@example\.", re.I),
     re.compile(r"@domain\.", re.I),
     re.compile(r"@yourdomain\.", re.I),
-    re.compile(r"@sentry\.", re.I),
+    re.compile(r"@sentry\.", re.I),           # e.g. foo@sentry.io
+    re.compile(r"\.ingest\.sentry\.io$", re.I),  # e.g. abc123@o37555.ingest.sentry.io
+    re.compile(r"\.ingest\.us\.sentry\.io$", re.I),  # US Sentry ingest
+    re.compile(r"@[a-z]\.dropbox\.com$", re.I),  # Dropbox system notification addresses
     re.compile(r"noreply@", re.I),
     re.compile(r"no-reply@", re.I),
     re.compile(r"donotreply@", re.I),

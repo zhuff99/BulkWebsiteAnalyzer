@@ -99,11 +99,15 @@ def load_urls(filepath: str | Path) -> list[str]:
 
     logger.info(f"Loading URLs from: {filepath}")
 
-    # Try to auto-detect the delimiter (comma, tab, semicolon)
+    # Try comma first (most common), fall back to auto-detect for tabs/semicolons.
+    # Note: sep=None with engine="python" can misfire on URLs because of slashes/colons.
     try:
-        df = pd.read_csv(path, sep=None, engine="python", dtype=str)
-    except Exception as e:
-        raise ValueError(f"Could not parse CSV file '{filepath}': {e}") from e
+        df = pd.read_csv(path, sep=",", dtype=str)
+    except Exception:
+        try:
+            df = pd.read_csv(path, sep=None, engine="python", dtype=str)
+        except Exception as e:
+            raise ValueError(f"Could not parse CSV file '{filepath}': {e}") from e
 
     if df.empty:
         raise ValueError(f"CSV file '{filepath}' is empty.")
