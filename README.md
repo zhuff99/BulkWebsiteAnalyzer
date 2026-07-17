@@ -1,6 +1,8 @@
 # 🔍 Bulk Website Analyzer
 
-> Classify 500–1,000+ websites at scale using AI. Feed it a CSV of URLs (or let it discover them automatically), and get back niche, site type, language, author, and contact email — exported to CSV or Google Sheets.
+> An AI-powered research pipeline that classifies websites at scale. Feed it a CSV of URLs (or let it discover them by keyword), and Claude returns structured metadata for every site — niche, site type, language, author, CMS, and confidence scores — exported to CSV or Google Sheets.
+
+Built as an exercise in **applied LLM engineering**: batched Claude API calls, an async fetch layer with a Playwright fallback, structured-output parsing with confidence scoring, and a clean CSV → Sheets data pipeline. It comfortably handles 500–1,000+ sites in a single run.
 
 ![Python](https://img.shields.io/badge/Python-3.10%2B-blue?logo=python)
 ![Claude AI](https://img.shields.io/badge/AI-Claude%20Haiku-purple?logo=anthropic)
@@ -12,16 +14,20 @@
 
 ## What It Does
 
+For each website, the pipeline produces a structured record:
+
 | Field | Example Output |
 |---|---|
 | Niche / Topic | `Personal Finance` |
 | Site Type | `Blog` / `News` / `Business` / `E-commerce` |
 | Language | `English (en)` |
 | Author / Editor | `Pat Flynn` |
+| CMS Detected | `WordPress` / `Shopify` / `Ghost` |
+| Confidence Scores | `95% niche · 92% type · 88% author` |
 | Contact Email | `neil@advanced.npdigital.com` |
 | Email Valid | `True` (DNS MX verified) |
-| Confidence Scores | `95% niche · 92% type · 88% author` |
-| CMS Detected | `WordPress` / `Shopify` / `Ghost` |
+
+The core is AI classification; **contact extraction, URL auto-discovery, and proxy support are optional capabilities** you enable per-run when a research task needs them (see [Optional Capabilities](#optional-capabilities)).
 
 ---
 
@@ -116,7 +122,7 @@ docker compose run analyzer --input sites.csv
 python analyzer.py --discover "personal finance blog" --discover-count 50
 ```
 
-### Discover + validate emails + export to Google Sheets
+### Add contact extraction + export to Google Sheets
 ```bash
 python analyzer.py \
   --input sites.csv \
@@ -124,7 +130,7 @@ python analyzer.py \
   --sheets --sheets-name "My Research"
 ```
 
-### Run through Apify proxy (bypass Cloudflare)
+### Route through a residential proxy (for bot-protected sites)
 ```bash
 python analyzer.py --input sites.csv --proxy
 ```
@@ -140,6 +146,17 @@ python analyzer.py \
   --model claude-sonnet-4-6 \
   --workers 30
 ```
+
+---
+
+## Optional Capabilities
+
+The classification pipeline runs on its own. These add-ons are opt-in per run — enable them only when a research task calls for them:
+
+- **URL discovery** (`--discover`) — build a list from a keyword query instead of supplying a CSV (DuckDuckGo by default; SerpAPI / Google CSE for higher volume).
+- **Contact extraction + validation** (`--validate-emails`) — pull author/contact details from pages and verify email deliverability via DNS MX lookup. Intended for legitimate outreach and research; use it responsibly and in line with applicable privacy rules.
+- **Google Sheets export** (`--sheets`) — push formatted results straight to a shared spreadsheet.
+- **Residential proxy** (`--proxy`) — for sites behind Cloudflare or similar bot protection. Route requests through Apify residential IPs; respect each site's terms of service and `robots.txt`.
 
 ---
 
@@ -220,9 +237,9 @@ APIFY_PROXY_GROUP=RESIDENTIAL
 7. Create a blank Google Sheet, share it (Editor) with the service account email
 8. Run with `--sheets --sheets-name "Your Sheet Name"`
 
-### Apify Proxy Setup (Cloudflare bypass)
+### Apify Proxy Setup (for bot-protected sites)
 
-Some sites block scrapers with Cloudflare. Apify routes your requests through real residential IPs to get around this.
+Some sites gate automated requests behind Cloudflare and similar protections. When your research covers those sites, Apify can route requests through real residential IPs so pages render as they would for a normal browser. Respect each site's terms of service and `robots.txt`.
 
 1. Sign up at [apify.com](https://apify.com)
 2. Go to **Settings → Integrations** and copy your API token

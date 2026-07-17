@@ -3,7 +3,6 @@
 *.json.key
 service_account*.json
 *-[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]*.json
-extended-acumen-492920-q1-03c68c47f0f3.json
 
 # Results output
 results/
@@ -23,6 +22,9 @@ playwright/.local-browsers/
 # OS
 .DS_Store
 Thumbs.db
+
+# Office/Word temp lock files (e.g. ~$foo.docx)
+~$*
 
 # IDE
 .vscode/
